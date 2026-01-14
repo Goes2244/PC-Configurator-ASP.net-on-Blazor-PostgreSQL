@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        Мета-информация и базовые настройки страницы.
+        Содержит декларацию DOCTYPE, кодировку, viewport и базовый URL.
+    -->
+    <meta charset="utf-8"/>
+    
+    <!--
+        Настройки адаптивности для корректного отображения на мобильных устройствах.
+        Устанавливает масштаб 1:1 и ширину, равную ширине устройства.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+    <!--
+        Базовый URL для всех относительных ссылок на странице.
+        Указывает на корневой каталог приложения.
+    -->
+    <base href="/"/>
+    
+    <!--
+        Основные стилевые файлы приложения.
+        Включает Bootstrap CSS, пользовательские стили и специфичные для проекта CSS.
+    -->
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]"/>
+    <link rel="stylesheet" href="@Assets["app.css"]"/>
+    <link rel="stylesheet" href="@Assets["PC.styles.css"]"/>
+    
+    <!--
+        Иконки Bootstrap Icons для использования векторных иконок в интерфейсе.
+        CDN ссылка на библиотеку иконок версии 1.11.0.
+    -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!--
+        Резервная ссылка на Bootstrap CSS через CDN (версия 5.3.0).
+        Обеспечивает дополнительную гарантию загрузки стилей Bootstrap.
+    -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    
+    <!--
+        Директива для импорта модулей JavaScript (современная замена тегу <script type="module">).
+        Используется в Blazor/ASP.NET Core для управления зависимостями скриптов.
+    -->
+    <ImportMap/>
+    
+    <!--
+        Иконка сайта (favicon) в формате PNG.
+        Отображается вкладках браузера, закладках и истории.
+    -->
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    
+    <!--
+        Blazor-специфичный компонент для рендеринга содержимого секции <head>.
+        Позволяет дочерним компонентам добавлять свои мета-теги, стили и скрипты.
+    -->
+    <HeadOutlet/>
+</head>
+
+<body>
+<!--
+    Основной контейнер приложения.
+    Содержит точку монтирования для Blazor-компонентов.
+    Атрибут id="app" используется Blazor для инициализации приложения.
+-->
+<div id="app">
+    <!--
+        Blazor-компонент для рендеринга маршрутизации.
+        Отображает соответствующий компонент на основе текущего URL.
+        Является центральной точкой для SPA-навигации в Blazor приложении.
+    -->
+    <Routes/>
+</div>
+
+<!--
+    Скрипты, необходимые для работы приложения.
+    Включает Bootstrap JavaScript и основной скрипт Blazor WebAssembly/Server.
+-->
+<script src="bootstrap/bootstrap.bundle.min.js"></script>
+<script src="_framework/blazor.web.js"></script>
+</body>
+</html>
