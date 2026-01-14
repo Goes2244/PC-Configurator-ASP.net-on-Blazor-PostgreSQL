@@ -1,0 +1,117 @@
+﻿@*
+    Файл: NavMenu.razor (или аналогичный компонент навигации)
+    Назначение: Компонент навигационного меню для приложения PC-Konfigurator.
+*@
+
+<!--
+    Верхняя панель навигации с логотипом приложения.
+    Содержит название приложения и иконку, идентифицирующую систему конфигурации ПК.
+-->
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <!--
+            Ссылка-логотип приложения.
+            Использует классы Bootstrap для стилизации.
+            Иконка представляет компьютерную систему.
+        -->
+        <a class="navbar-brand" href="">
+            <i class="bi bi-pc-display me-2"></i>PC-Konfigurator
+        </a>
+    </div>
+</div>
+
+<!--
+    Переключатель меню навигации для мобильных устройств.
+    Скрытый чекбокс, управляющий отображением меню в адаптивном дизайне.
+-->
+<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+
+<!-- Навигационное меню с разделами приложения -->
+
+<!--
+    Раздел: Материнские платы
+    Ссылка на страницу управления материнскими платами.
+-->
+<div class="nav-item px-3 pt-2">
+    <NavLink class="nav-link" href="materinskiye-platy">
+        <!-- Иконка материнской платы из библиотеки Bootstrap Icons -->
+        <i class="bi bi-motherboard me-2 fs-5"></i> Материнские платы
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Процессоры
+    Ссылка на страницу управления процессорами.
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="protsessory">
+        <!-- Иконка процессора из библиотеки Bootstrap Icons -->
+        <i class="bi bi-cpu me-2 fs-5"></i> Процессоры
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Оперативная память
+    Ссылка на страницу управления модулями оперативной памяти.
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="operativnaya-pamyati">
+        <!-- Иконка оперативной памяти из библиотеки Bootstrap Icons -->
+        <i class="bi bi-memory me-2 fs-5"></i> Оперативная память
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Видеокарты
+    Ссылка на страницу управления видеокартами.
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="videokarty">
+        <!-- Иконка видеокарты из библиотеки Bootstrap Icons -->
+        <i class="bi bi-gpu-card me-2 fs-5"></i> Видеокарты
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Накопители
+    Ссылка на страницу управления накопителями данных (HDD/SSD).
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="nakopiteli">
+        <!-- Иконка жесткого диска из библиотеки Bootstrap Icons -->
+        <i class="bi bi-hdd me-2 fs-5"></i> Накопители
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Блоки питания
+    Ссылка на страницу управления блоками питания.
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="bloki-pitaniya">
+        <!-- Иконка электрического разъема из библиотеки Bootstrap Icons -->
+        <i class="bi bi-plug me-2 fs-5"></i> Блоки питания
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Корпуса
+    Ссылка на страницу управления корпусами системных блоков.
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="korpusa">
+        <!-- Иконка системного блока из библиотеки Bootstrap Icons -->
+        <i class="bi bi-pc me-2 fs-5"></i> Корпуса
+    </NavLink>
+</div>
+
+<!--
+    Раздел: Готовые сборки
+    Ссылка на страницу управления готовыми компьютерными сборками.
+-->
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="gotovyye-sborki">
+        <!-- Иконка компьютерной системы из библиотеки Bootstrap Icons -->
+        <i class="bi bi-pc-display me-2 fs-5"></i> Готовые сборки
+    </NavLink>
+</div>
