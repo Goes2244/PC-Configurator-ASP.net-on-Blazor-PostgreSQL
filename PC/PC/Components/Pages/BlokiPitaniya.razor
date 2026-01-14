@@ -1,0 +1,314 @@
+@page "/bloki-pitaniya"
+@using PC.Data.Models
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore;
+@inject Microsoft.EntityFrameworkCore.IDbContextFactory<PC.Data.AppDbContext> DbContextFactory
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+<PageTitle>Блоки питания</PageTitle>
+
+<div class="container mt-4">
+    <h3><i class="bi bi-plug"></i> Управление блоками питания</h3>
+    
+    <button class="btn btn-primary mb-3" @onclick="ShowAddForm">
+        <i class="bi bi-plus-circle"></i> Добавить новый блок питания
+    </button>
+    
+    @if (showForm)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                @(editingItem == null ? "Добавление блока питания" : "Редактирование блока питания")
+            </div>
+            <div class="card-body">
+                <EditForm Model="@currentItem" OnValidSubmit="@SaveItem">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Модель *</label>
+                        <InputText @bind-Value="currentItem.Model" class="form-control" />
+                        <ValidationMessage For="@(() => currentItem.Model)" />
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Мощность (Вт) *</label>
+                            <InputNumber @bind-Value="currentItem.MoshchnostVt" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.MoshchnostVt)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Сертификация</label>
+                            <InputText @bind-Value="currentItem.Sertifikatsiya" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.Sertifikatsiya)" />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Цена (₽) *</label>
+                        <InputNumber @bind-Value="currentItem.Tsena" class="form-control" />
+                        <ValidationMessage For="@(() => currentItem.Tsena)" />
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Сохранить
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="CancelEdit">
+                            <i class="bi bi-x-circle"></i> Отмена
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+    
+    @if (blokiPitaniya == null)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-hourglass-split"></i> Загрузка данных...
+        </div>
+    }
+    else if (!blokiPitaniya.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Нет данных. Добавьте первый блок питания.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Модель</th>
+                        <th>Мощность</th>
+                        <th>Сертификация</th>
+                        <th>Цена</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in blokiPitaniya)
+                    {
+                        <tr>
+                            <td>@item.Model</td>
+                            <td>@item.MoshchnostVt Вт</td>
+                            <td>@item.Sertifikatsiya</td>
+                            <td>@item.Tsena.ToString("N2") ₽</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning me-2" @onclick="() => EditItem(item)" title="Редактировать">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item)" title="Удалить">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Список блоков питания для отображения в таблице.
+    /// </summary>
+    /// <remarks>
+    /// Инициализируется в методе <see cref="LoadData"/> при загрузке компонента.
+    /// Может быть null во время начальной загрузки данных.
+    /// </remarks>
+    private List<BlokPitaniya>? blokiPitaniya;
+    
+    /// <summary>
+    /// Флаг, определяющий видимость формы редактирования/добавления.
+    /// </summary>
+    /// <value>true - форма видна, false - форма скрыта.</value>
+    private bool showForm = false;
+    
+    /// <summary>
+    /// Текущий редактируемый или добавляемый блок питания.
+    /// </summary>
+    /// <remarks>
+    /// Используется как модель для формы редактирования.
+    /// Сбрасывается при отмене редактирования или успешном сохранении.
+    /// </remarks>
+    private BlokPitaniya currentItem = new();
+    
+    /// <summary>
+    /// Ссылка на исходный объект при редактировании существующей записи.
+    /// </summary>
+    /// <remarks>
+    /// Используется для определения режима работы формы:
+    /// - null: режим добавления новой записи
+    /// - не null: режим редактирования существующей записи
+    /// </remarks>
+    private BlokPitaniya? editingItem;
+    
+    /// <summary>
+    /// Метод жизненного цикла компонента, вызываемый при инициализации.
+    /// </summary>
+    /// <returns>Асинхронная задача, которая загружает данные блоков питания.</returns>
+    /// <remarks>
+    /// Вызывает <see cref="LoadData"/> для получения списка блоков питания из базы данных.
+    /// </remarks>
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+    
+    /// <summary>
+    /// Загружает список блоков питания из базы данных.
+    /// </summary>
+    /// <returns>Асинхронная задача, которая обновляет свойство <see cref="blokiPitaniya"/>.</returns>
+    /// <remarks>
+    /// Использует фабрику контекста базы данных для создания экземпляра <see cref="AppDbContext"/>.
+    /// Извлекает все записи из таблицы блоков питания с помощью <see cref="DbContext.Set{TEntity}()"/>.
+    /// </remarks>
+    private async Task LoadData()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        blokiPitaniya = await context.BlokiPitaniya.ToListAsync();
+    }
+    
+    /// <summary>
+    /// Отображает форму для добавления нового блока питания.
+    /// </summary>
+    /// <remarks>
+    /// Сбрасывает <see cref="currentItem"/> в новый экземпляр <see cref="BlokPitaniya"/>.
+    /// Устанавливает <see cref="editingItem"/> в null для режима добавления.
+    /// Устанавливает <see cref="showForm"/> в true для отображения формы.
+    /// </remarks>
+    private void ShowAddForm()
+    {
+        currentItem = new BlokPitaniya();
+        editingItem = null;
+        showForm = true;
+    }
+    
+    /// <summary>
+    /// Подготавливает форму для редактирования выбранного блока питания.
+    /// </summary>
+    /// <param name="item">Блок питания для редактирования.</param>
+    /// <remarks>
+    /// Создает копию объекта <paramref name="item"/> для редактирования в <see cref="currentItem"/>.
+    /// Сохраняет ссылку на исходный объект в <see cref="editingItem"/>.
+    /// Устанавливает <see cref="showForm"/> в true для отображения формы.
+    /// </remarks>
+    private void EditItem(BlokPitaniya item)
+    {
+        currentItem = new BlokPitaniya 
+        { 
+            Model = item.Model,
+            MoshchnostVt = item.MoshchnostVt,
+            Sertifikatsiya = item.Sertifikatsiya,
+            Tsena = item.Tsena
+        };
+        editingItem = item;
+        showForm = true;
+    }
+    
+    /// <summary>
+    /// Сохраняет изменения в базе данных.
+    /// </summary>
+    /// <returns>Асинхронная задача, обрабатывающая операцию сохранения.</returns>
+    /// <remarks>
+    /// В зависимости от режима работы:
+    /// 1. Добавление новой записи: добавляет <see cref="currentItem"/> в контекст.
+    /// 2. Редактирование с изменением модели: удаляет старую запись и добавляет новую.
+    /// 3. Редактирование без изменения модели: обновляет существующую запись.
+    /// 
+    /// После успешного сохранения:
+    /// - Скрывает форму (<see cref="showForm"/> = false)
+    /// - Перезагружает данные (<see cref="LoadData"/>)
+    /// - Показывает уведомление об успехе
+    /// 
+    /// В случае ошибки показывает сообщение об ошибке через JavaScript.
+    /// </remarks>
+    private async Task SaveItem()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+    
+        try
+        {
+            if (editingItem == null)
+            {
+                // Режим добавления новой записи
+                context.BlokiPitaniya.Add(currentItem);
+            }
+            else
+            {
+                // Режим редактирования существующей записи
+                if (currentItem.Model != editingItem.Model)
+                {
+                    // Если изменилась модель (первичный ключ), удаляем старую и добавляем новую
+                    context.BlokiPitaniya.Remove(editingItem);
+                    context.BlokiPitaniya.Add(currentItem);
+                }
+                else
+                {
+                    // Если модель не изменилась, обновляем существующую запись
+                    var entity = context.BlokiPitaniya
+                        .FirstOrDefault(e => e.Model == currentItem.Model);
+                
+                    if (entity != null)
+                    {
+                        entity.MoshchnostVt = currentItem.MoshchnostVt;
+                        entity.Sertifikatsiya = currentItem.Sertifikatsiya ?? string.Empty;
+                        entity.Tsena = currentItem.Tsena;
+                    }
+                }
+            }
+        
+            await context.SaveChangesAsync();
+            showForm = false;
+            await LoadData();
+        
+            await JSRuntime.InvokeVoidAsync("alert", "Данные успешно сохранены!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Ошибка: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Удаляет выбранный блок питания после подтверждения пользователем.
+    /// </summary>
+    /// <param name="item">Блок питания для удаления.</param>
+    /// <returns>Асинхронная задача, обрабатывающая операцию удаления.</returns>
+    /// <remarks>
+    /// Показывает диалог подтверждения через JavaScript.
+    /// Если пользователь подтверждает удаление:
+    /// - Удаляет запись из базы данных
+    /// - Перезагружает данные (<see cref="LoadData"/>)
+    /// - Показывает уведомление об успехе
+    /// </remarks>
+    private async Task DeleteItem(BlokPitaniya item)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Вы уверены, что хотите удалить блок питания '{item.Model}'?"))
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            context.BlokiPitaniya.Remove(item);
+            await context.SaveChangesAsync();
+            await LoadData();
+            
+            await JSRuntime.InvokeVoidAsync("alert", "Блок питания успешно удален!");
+        }
+    }
+    
+    /// <summary>
+    /// Отменяет редактирование и скрывает форму.
+    /// </summary>
+    /// <remarks>
+    /// Устанавливает <see cref="showForm"/> в false.
+    /// Сбрасывает <see cref="currentItem"/> в новый экземпляр <see cref="BlokPitaniya"/>.
+    /// </remarks>
+    private void CancelEdit()
+    {
+        showForm = false;
+        currentItem = new BlokPitaniya();
+    }
+}

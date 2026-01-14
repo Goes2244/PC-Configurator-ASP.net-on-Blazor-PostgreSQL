@@ -1,0 +1,434 @@
+@page "/gotovyye-sborki"
+@rendermode InteractiveServer
+@using PC.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject Microsoft.EntityFrameworkCore.IDbContextFactory<PC.Data.AppDbContext> DbContextFactory
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+
+<PageTitle>Готовые сборки</PageTitle>
+
+<div class="container mt-4">
+    <h3><i class="bi bi-pc-display"></i> Управление готовыми сборками</h3>
+    
+    <button class="btn btn-primary mb-3" @onclick="ShowAddForm">
+        <i class="bi bi-plus-circle"></i> Добавить новую сборку
+    </button>
+    
+    @if (showForm)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                @(editingItem == null ? "Добавление сборки" : "Редактирование сборки")
+            </div>
+            <div class="card-body">
+                <EditForm Model="@currentItem" OnValidSubmit="@SaveItem">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">ID сборки *</label>
+                        <InputText @bind-Value="currentItem.IdSborki" class="form-control" />
+                        <ValidationMessage For="@(() => currentItem.IdSborki)" />
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Материнская плата *</label>
+                            <InputText @bind-Value="currentItem.MaterinskayaPlataModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.MaterinskayaPlataModel)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Процессор *</label>
+                            <InputText @bind-Value="currentItem.ProtsessorModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.ProtsessorModel)" />
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Оперативная память *</label>
+                            <InputText @bind-Value="currentItem.OperativnayaPamyatModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.OperativnayaPamyatModel)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Видеокарта *</label>
+                            <InputText @bind-Value="currentItem.VideokartaModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.VideokartaModel)" />
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Накопитель *</label>
+                            <InputText @bind-Value="currentItem.NakopitelModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.NakopitelModel)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Блок питания *</label>
+                            <InputText @bind-Value="currentItem.BlokPitaniyaModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.BlokPitaniyaModel)" />
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Корпус *</label>
+                            <InputText @bind-Value="currentItem.KorpusModel" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.KorpusModel)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Вычислительная мощность *</label>
+                            <InputText @bind-Value="currentItem.VychislitelnayaMoshchnost" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.VychislitelnayaMoshchnost)" />
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Общая стоимость (₽) *</label>
+                            <InputNumber @bind-Value="currentItem.ObshchayaStoimost" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.ObshchayaStoimost)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Мощность (Вт) *</label>
+                            <InputNumber @bind-Value="currentItem.MoshnostVt" class="form-control" />
+                            <ValidationMessage For="@(() => currentItem.MoshnostVt)" />
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Сохранить
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="CancelEdit">
+                            <i class="bi bi-x-circle"></i> Отмена
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+    
+    @if (sborki == null)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-hourglass-split"></i> Загрузка данных...
+        </div>
+    }
+    else if (!sborki.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Нет данных. Добавьте первую сборку.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID сборки</th>
+                        <th>Материнская плата</th>
+                        <th>Процессор</th>
+                        <th>ОЗУ</th>
+                        <th>Видеокарта</th>
+                        <th>Общая стоимость</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in sborki)
+                    {
+                        <tr>
+                            <td>@item.IdSborki</td>
+                            <td>@item.MaterinskayaPlataModel</td>
+                            <td>@item.ProtsessorModel</td>
+                            <td>@item.OperativnayaPamyatModel</td>
+                            <td>@item.VideokartaModel</td>
+                            <td>@item.ObshchayaStoimost.ToString("N2") ₽</td>
+                            <td>
+                                <button class="btn btn-sm btn-info me-2" @onclick="() => ShowDetails(item)" title="Просмотр">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning me-2" @onclick="() => EditItem(item)" title="Редактировать">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item)" title="Удалить">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Модальное окно для деталей -->
+@if (showDetailsModal && selectedSborka != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Детали сборки: @selectedSborka.IdSborki</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDetailsModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Компоненты:</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <strong>Материнская плата:</strong> @selectedSborka.MaterinskayaPlataModel
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Процессор:</strong> @selectedSborka.ProtsessorModel
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>ОЗУ:</strong> @selectedSborka.OperativnayaPamyatModel
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Видеокарта:</strong> @selectedSborka.VideokartaModel
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Дополнительно:</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <strong>Накопитель:</strong> @selectedSborka.NakopitelModel
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Блок питания:</strong> @selectedSborka.BlokPitaniyaModel
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Корпус:</strong> @selectedSborka.KorpusModel
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Характеристики:</h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <strong>Вычислительная мощность:</strong><br>
+                                            @selectedSborka.VychislitelnayaMoshchnost
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Общая стоимость:</strong><br>
+                                            @selectedSborka.ObshchayaStoimost.ToString("N2") ₽
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Мощность:</strong><br>
+                                            @selectedSborka.MoshnostVt Вт
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDetailsModal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Список готовых сборок, загруженных из базы данных.
+    /// </summary>
+    private List<GotovayaSborka>? sborki;
+    
+    /// <summary>
+    /// Флаг, указывающий, отображается ли форма добавления/редактирования.
+    /// </summary>
+    private bool showForm = false;
+    
+    /// <summary>
+    /// Флаг, указывающий, отображается ли модальное окно с деталями сборки.
+    /// </summary>
+    private bool showDetailsModal = false;
+    
+    /// <summary>
+    /// Текущий редактируемый или добавляемый элемент сборки.
+    /// </summary>
+    private GotovayaSborka currentItem = new();
+    
+    /// <summary>
+    /// Ссылка на элемент, который редактируется (null при добавлении нового).
+    /// </summary>
+    private GotovayaSborka? editingItem;
+    
+    /// <summary>
+    /// Выбранная сборка для просмотра деталей в модальном окне.
+    /// </summary>
+    private GotovayaSborka? selectedSborka;
+    
+    /// <summary>
+    /// Метод жизненного цикла компонента, вызываемый после инициализации компонента.
+    /// Загружает данные из базы данных.
+    /// </summary>
+    /// <returns>Задача, представляющая асинхронную операцию загрузки данных.</returns>
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+    
+    /// <summary>
+    /// Загружает список готовых сборок из базы данных.
+    /// </summary>
+    /// <returns>Задача, представляющая асинхронную операцию загрузки данных.</returns>
+    private async Task LoadData()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        sborki = await context.GotovyyeSborki.ToListAsync();
+    }
+    
+    /// <summary>
+    /// Показывает форму для добавления новой сборки.
+    /// Сбрасывает состояние формы и устанавливает флаг отображения.
+    /// </summary>
+    private void ShowAddForm()
+    {
+        currentItem = new GotovayaSborka();
+        editingItem = null;
+        showForm = true;
+    }
+    
+    /// <summary>
+    /// Заполняет форму данными существующей сборки для редактирования.
+    /// </summary>
+    /// <param name="item">Сборка, которую необходимо отредактировать.</param>
+    private void EditItem(GotovayaSborka item)
+    {
+        currentItem = new GotovayaSborka 
+        { 
+            IdSborki = item.IdSborki,
+            MaterinskayaPlataModel = item.MaterinskayaPlataModel,
+            ProtsessorModel = item.ProtsessorModel,
+            OperativnayaPamyatModel = item.OperativnayaPamyatModel,
+            VideokartaModel = item.VideokartaModel,
+            NakopitelModel = item.NakopitelModel,
+            BlokPitaniyaModel = item.BlokPitaniyaModel,
+            KorpusModel = item.KorpusModel,
+            VychislitelnayaMoshchnost = item.VychislitelnayaMoshchnost,
+            ObshchayaStoimost = item.ObshchayaStoimost,
+            MoshnostVt = item.MoshnostVt
+        };
+        editingItem = item;
+        showForm = true;
+    }
+    
+    /// <summary>
+    /// Открывает модальное окно с детальной информацией о сборке.
+    /// </summary>
+    /// <param name="item">Сборка, детали которой нужно показать.</param>
+    private void ShowDetails(GotovayaSborka item)
+    {
+        selectedSborka = item;
+        showDetailsModal = true;
+    }
+    
+    /// <summary>
+    /// Сохраняет изменения в базе данных (добавляет новую или обновляет существующую сборку).
+    /// </summary>
+    /// <returns>Задача, представляющая асинхронную операцию сохранения.</returns>
+    private async Task SaveItem()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+    
+        try
+        {
+            if (editingItem == null)
+            {
+                // Добавление новой сборки
+                context.GotovyyeSborki.Add(currentItem);
+            }
+            else
+            {
+                // Обновление существующей сборки
+                if (currentItem.IdSborki != editingItem.IdSborki)
+                {
+                    // Если изменился ID, удаляем старую и добавляем новую
+                    context.GotovyyeSborki.Remove(editingItem);
+                    context.GotovyyeSborki.Add(currentItem);
+                }
+                else
+                {
+                    // Если ID не изменился, обновляем существующую запись
+                    var entity = context.GotovyyeSborki
+                        .FirstOrDefault(e => e.IdSborki == currentItem.IdSborki);
+                
+                    if (entity != null)
+                    {
+                        entity.MaterinskayaPlataModel = currentItem.MaterinskayaPlataModel;
+                        entity.ProtsessorModel = currentItem.ProtsessorModel;
+                        entity.OperativnayaPamyatModel = currentItem.OperativnayaPamyatModel;
+                        entity.VideokartaModel = currentItem.VideokartaModel;
+                        entity.NakopitelModel = currentItem.NakopitelModel;
+                        entity.BlokPitaniyaModel = currentItem.BlokPitaniyaModel;
+                        entity.KorpusModel = currentItem.KorpusModel;
+                        entity.VychislitelnayaMoshchnost = currentItem.VychislitelnayaMoshchnost;
+                        entity.ObshchayaStoimost = currentItem.ObshchayaStoimost;
+                        entity.MoshnostVt = currentItem.MoshnostVt;
+                    }
+                }
+            }
+        
+            await context.SaveChangesAsync();
+            showForm = false;
+            await LoadData();
+        
+            await JSRuntime.InvokeVoidAsync("alert", "Данные успешно сохранены!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Ошибка: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Удаляет сборку из базы данных после подтверждения пользователем.
+    /// </summary>
+    /// <param name="item">Сборка, которую необходимо удалить.</param>
+    /// <returns>Задача, представляющая асинхронную операцию удаления.</returns>
+    private async Task DeleteItem(GotovayaSborka item)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Вы уверены, что хотите удалить сборку '{item.IdSborki}'?"))
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            context.GotovyyeSborki.Remove(item);
+            await context.SaveChangesAsync();
+            await LoadData();
+            
+            await JSRuntime.InvokeVoidAsync("alert", "Сборка успешно удалена!");
+        }
+    }
+    
+    /// <summary>
+    /// Отменяет редактирование и скрывает форму.
+    /// </summary>
+    private void CancelEdit()
+    {
+        showForm = false;
+        currentItem = new GotovayaSborka();
+    }
+    
+    /// <summary>
+    /// Закрывает модальное окно с деталями сборки.
+    /// </summary>
+    private void CloseDetailsModal()
+    {
+        showDetailsModal = false;
+        selectedSborka = null;
+    }
+}

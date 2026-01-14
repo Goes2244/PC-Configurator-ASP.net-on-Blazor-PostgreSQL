@@ -1,0 +1,527 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using PC.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<PC.Data.AppDbContext> DbContextFactory
+@inject IJSRuntime JSRuntime
+
+<!-- 
+    Основная страница веб-приложения "Конфигуратор ПК".
+    Представляет пользовательский интерфейс для подбора и конфигурации компьютерных компонентов.
+    Использует серверный рендеринг Blazor (InteractiveServer) для интерактивности.
+-->
+
+<PageTitle>Конфигуратор ПК</PageTitle>
+
+<div class="container mt-4"/>
+<!-- Заголовок страницы -->
+<h1 class="mb-4">
+    <i class="bi bi-pc-display-horizontal"></i> Конфигуратор ПК
+</h1>
+<p class="lead">Соберите свою идеальную систему из доступных компонентов.</p>
+<div class="row">
+    <div class="col-md-9">
+        <!-- Карточка сборки компьютера -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-tools me-2"></i>Сборка компьютера
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Сетка выбора компонентов -->
+                <div class="row">
+                    <!-- Левая колонка с компонентами -->
+                    <div class="col-md-6">
+                        <h6>Выберите компоненты:</h6>
+                            
+                        <!-- Выбор материнской платы -->
+                        <div class="mb-3">
+                            <label class="form-label">Материнская плата</label>
+                            <select class="form-select" @bind="selectedMaterinskayaPlata" @bind:event="onchange">
+                                <option value="">Выберите материнскую плату</option>
+                                @foreach (var item in materinskiyePlaty)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.FormFaktor, @item.Soket) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                            
+                        <!-- Выбор процессора -->
+                        <div class="mb-3">
+                            <label class="form-label">Процессор</label>
+                            <select class="form-select" @bind="selectedProtsessor" @bind:event="onchange">
+                                <option value="">Выберите процессор</option>
+                                @foreach (var item in protsessory)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.Soket, @item.KolichestvoYader ядер) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                            
+                        <!-- Выбор оперативной памяти -->
+                        <div class="mb-3">
+                            <label class="form-label">Оперативная память</label>
+                            <select class="form-select" @bind="selectedOperativnayaPamyat" @bind:event="onchange">
+                                <option value="">Выберите оперативную память</option>
+                                @foreach (var item in operativnayaPamyat)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.Tip, @item.ObyomModulyaGb ГБ) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                        
+                    <!-- Правая колонка с компонентами -->
+                    <div class="col-md-6">
+                        <h6>&nbsp;</h6>
+                            
+                        <!-- Выбор видеокарты -->
+                        <div class="mb-3">
+                            <label class="form-label">Видеокарта</label>
+                            <select class="form-select" @bind="selectedVideokarta" @bind:event="onchange">
+                                <option value="">Выберите видеокарту</option>
+                                @foreach (var item in videokarty)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.ObyemPamyatiGb ГБ) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                            
+                        <!-- Выбор накопителя -->
+                        <div class="mb-3">
+                            <label class="form-label">Накопитель</label>
+                            <select class="form-select" @bind="selectedNakopitel" @bind:event="onchange">
+                                <option value="">Выберите накопитель</option>
+                                @foreach (var item in nakopiteli)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.Tip, @item.ObyomGb ГБ) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                            
+                        <!-- Выбор блока питания -->
+                        <div class="mb-3">
+                            <label class="form-label">Блок питания</label>
+                            <select class="form-select" @bind="selectedBlokPitaniya" @bind:event="onchange">
+                                <option value="">Выберите блок питания</option>
+                                @foreach (var item in blokiPitaniya)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.MoshchnostVt Вт) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                            
+                        <!-- Выбор корпуса -->
+                        <div class="mb-3">
+                            <label class="form-label">Корпус</label>
+                            <select class="form-select" @bind="selectedKorpus" @bind:event="onchange">
+                                <option value="">Выберите корпус</option>
+                                @foreach (var item in korpusa)
+                                {
+                                    <option value="@item.Model">@item.Model (@item.Razmery) - @item.Tsena.ToString("N2") ₽</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                    
+                <!-- Информация о сборке -->
+                <div class="row">
+                    <!-- Блок совместимости -->
+                    <div class="col-md-6">
+                        <h6>Совместимость:</h6>
+                        @if (IsConfigurationComplete())
+                        {
+                            <div class="alert @(IsConfigurationCompatible() ? "alert-success" : "alert-danger")">
+                                <i class="bi @(IsConfigurationCompatible() ? "bi-check-circle" : "bi-exclamation-triangle")"></i> 
+                                @GetCompatibilityMessage()
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Выберите все компоненты для проверки совместимости
+                            </div>
+                        }
+                    </div>
+                        
+                    <!-- Блок итоговой информации -->
+                    <div class="col-md-6">
+                        <h6>Итоговая информация:</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Общая стоимость:</span>
+                                <strong>@GetTotalPrice().ToString("N2") ₽</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Суммарная мощность:</span>
+                                <strong>@GetTotalPower() Вт</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Вычислительная мощность:</span>
+                                <strong>@GetPerformanceLevel()</strong>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                    
+                <!-- Кнопки управления -->
+                <div class="mt-4 text-center">
+                    <button class="btn btn-success btn-lg" @onclick="SaveConfiguration" 
+                            disabled="@(!IsConfigurationComplete() || !IsConfigurationCompatible())">
+                        <i class="bi bi-check-circle me-2"></i>Сохранить сборку
+                    </button>
+                    <button class="btn btn-secondary btn-lg ms-2" @onclick="ResetConfiguration">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Сбросить
+                    </button>
+                </div>
+            </div>
+        </div>
+            
+        <!-- Карточка с советами -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>Советы по сборке
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Убедитесь, что сокет процессора совместим с сокетом материнской платы</li>
+                    <li>Проверьте, поддерживает ли материнская плата тип и частоту выбранной оперативной памяти</li>
+                    <li>Убедитесь, что блок питания имеет достаточную мощность для всех компонентов</li>
+                    <li>Проверьте, поместится ли видеокарта в выбранный корпус</li>
+                    <li>Убедитесь, что корпус поддерживает форм-фактор материнской платы</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Списки доступных компонентов
+    private List<MaterinskayaPlata> materinskiyePlaty = new();
+    private List<Protsessor> protsessory = new();
+    private List<OperativnayaPamyat> operativnayaPamyat = new();
+    private List<Videokarta> videokarty = new();
+    private List<Nakopitel> nakopiteli = new();
+    private List<BlokPitaniya> blokiPitaniya = new();
+    private List<Korpus> korpusa = new();
+    
+    // Выбранные компоненты (значения из выпадающих списков)
+    private string selectedMaterinskayaPlata = "";
+    private string selectedProtsessor = "";
+    private string selectedOperativnayaPamyat = "";
+    private string selectedVideokarta = "";
+    private string selectedNakopitel = "";
+    private string selectedBlokPitaniya = "";
+    private string selectedKorpus = "";
+    
+    /// <summary>
+    /// Метод инициализации компонента, вызываемый при первоначальной загрузке страницы.
+    /// </summary>
+    /// <remarks>
+    /// Выполняет асинхронную загрузку всех компонентов из базы данных.
+    /// </remarks>
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllComponents();
+    }
+    
+    /// <summary>
+    /// Загружает все типы компьютерных компонентов из базы данных.
+    /// </summary>
+    /// <returns>Асинхронная задача, выполняющая загрузку данных.</returns>
+    /// <remarks>
+    /// Создает новый контекст базы данных для каждого запроса с использованием фабрики контекстов.
+    /// Загружает данные параллельно для каждого типа компонентов.
+    /// </remarks>
+    private async Task LoadAllComponents()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        
+        materinskiyePlaty = await context.MaterinskiyePlaty.ToListAsync();
+        protsessory = await context.Protsessory.ToListAsync();
+        operativnayaPamyat = await context.OperativnayaPamyati.ToListAsync();
+        videokarty = await context.Videokarty.ToListAsync();
+        nakopiteli = await context.Nakopiteli.ToListAsync();
+        blokiPitaniya = await context.BlokiPitaniya.ToListAsync();
+        korpusa = await context.Korpusa.ToListAsync();
+        
+        Console.WriteLine($"Загружено: {materinskiyePlaty.Count} плат, {protsessory.Count} процессоров и т.д.");
+    }
+    
+    // Вспомогательные методы для получения выбранных объектов
+    
+    /// <summary>
+    /// Получает объект выбранной материнской платы по её модели.
+    /// </summary>
+    /// <returns>Объект <see cref="MaterinskayaPlata"/> или null, если плата не выбрана.</returns>
+    private MaterinskayaPlata? GetSelectedMaterinskayaPlata()
+        => materinskiyePlaty.FirstOrDefault(m => m.Model == selectedMaterinskayaPlata);
+    
+    /// <summary>
+    /// Получает объект выбранного процессора по его модели.
+    /// </summary>
+    /// <returns>Объект <see cref="Protsessor"/> или null, если процессор не выбран.</returns>
+    private Protsessor? GetSelectedProtsessor()
+        => protsessory.FirstOrDefault(p => p.Model == selectedProtsessor);
+    
+    /// <summary>
+    /// Получает объект выбранной оперативной памяти по её модели.
+    /// </summary>
+    /// <returns>Объект <see cref="OperativnayaPamyat"/> или null, если память не выбрана.</returns>
+    private OperativnayaPamyat? GetSelectedOperativnayaPamyat()
+        => operativnayaPamyat.FirstOrDefault(o => o.Model == selectedOperativnayaPamyat);
+    
+    /// <summary>
+    /// Получает объект выбранной видеокарты по её модели.
+    /// </summary>
+    /// <returns>Объект <see cref="Videokarta"/> или null, если видеокарта не выбрана.</returns>
+    private Videokarta? GetSelectedVideokarta()
+        => videokarty.FirstOrDefault(v => v.Model == selectedVideokarta);
+    
+    /// <summary>
+    /// Получает объект выбранного накопителя по его модели.
+    /// </summary>
+    /// <returns>Объект <see cref="Nakopitel"/> или null, если накопитель не выбран.</returns>
+    private Nakopitel? GetSelectedNakopitel()
+        => nakopiteli.FirstOrDefault(n => n.Model == selectedNakopitel);
+    
+    /// <summary>
+    /// Получает объект выбранного блока питания по его модели.
+    /// </summary>
+    /// <returns>Объект <see cref="BlokPitaniya"/> или null, если блок питания не выбран.</returns>
+    private BlokPitaniya? GetSelectedBlokPitaniya()
+        => blokiPitaniya.FirstOrDefault(b => b.Model == selectedBlokPitaniya);
+    
+    /// <summary>
+    /// Получает объект выбранного корпуса по его модели.
+    /// </summary>
+    /// <returns>Объект <see cref="Korpus"/> или null, если корпус не выбран.</returns>
+    private Korpus? GetSelectedKorpus()
+        => korpusa.FirstOrDefault(k => k.Model == selectedKorpus);
+    
+    /// <summary>
+    /// Проверяет, выбраны ли все необходимые компоненты для сборки.
+    /// </summary>
+    /// <returns>true, если все 7 компонентов выбраны; иначе false.</returns>
+    /// <remarks>
+    /// Проверяет, что все поля выбранных компонентов не являются пустыми или null.
+    /// </remarks>
+    private bool IsConfigurationComplete()
+    {
+        return !string.IsNullOrEmpty(selectedMaterinskayaPlata) &&
+               !string.IsNullOrEmpty(selectedProtsessor) &&
+               !string.IsNullOrEmpty(selectedOperativnayaPamyat) &&
+               !string.IsNullOrEmpty(selectedVideokarta) &&
+               !string.IsNullOrEmpty(selectedNakopitel) &&
+               !string.IsNullOrEmpty(selectedBlokPitaniya) &&
+               !string.IsNullOrEmpty(selectedKorpus);
+    }
+    
+    /// <summary>
+    /// Проверяет совместимость выбранных компонентов между собой.
+    /// </summary>
+    /// <returns>true, если все компоненты совместимы; иначе false.</returns>
+    /// <remarks>
+    /// Выполняет три основные проверки:
+    /// 1. Совместимость сокета процессора и материнской платы
+    /// 2. Совместимость типа оперативной памяти с материнской платой
+    /// 3. Достаточность мощности блока питания (с запасом 20%)
+    /// </remarks>
+    private bool IsConfigurationCompatible()
+    {
+        if (!IsConfigurationComplete()) return false;
+        
+        var plata = GetSelectedMaterinskayaPlata();
+        var protsessor = GetSelectedProtsessor();
+        var pamyat = GetSelectedOperativnayaPamyat();
+        var blokPitaniya = GetSelectedBlokPitaniya();
+        
+        // Проверка совместимости сокета
+        bool socketCompatible = plata?.Soket == protsessor?.Soket;
+        
+        // Проверка совместимости типа памяти
+        bool memoryCompatible = plata?.TipPodderzhivayemoyOzu == pamyat?.Tip;
+        
+        // Проверка мощности блока питания
+        int totalPower = GetTotalPower();
+        bool powerCompatible = blokPitaniya?.MoshchnostVt >= totalPower * 1.2; // +20% запас
+        
+        return socketCompatible && memoryCompatible && powerCompatible;
+    }
+    
+    /// <summary>
+    /// Формирует подробное сообщение о совместимости выбранных компонентов.
+    /// </summary>
+    /// <returns>Текстовое сообщение с описанием статуса совместимости.</returns>
+    /// <remarks>
+    /// Если не все компоненты выбраны, возвращает соответствующее сообщение.
+    /// Если есть проблемы совместимости, перечисляет их.
+    /// Если все компоненты совместимы, возвращает подтверждающее сообщение.
+    /// </remarks>
+    private string GetCompatibilityMessage()
+    {
+        if (!IsConfigurationComplete()) return "Выберите все компоненты";
+        
+        var issues = new List<string>();
+        var plata = GetSelectedMaterinskayaPlata();
+        var protsessor = GetSelectedProtsessor();
+        var pamyat = GetSelectedOperativnayaPamyat();
+        var blokPitaniya = GetSelectedBlokPitaniya();
+        
+        if (plata?.Soket != protsessor?.Soket)
+            issues.Add("Сокет процессора не совместим с материнской платой");
+        
+        if (plata?.TipPodderzhivayemoyOzu != pamyat?.Tip)
+            issues.Add("Тип оперативной памяти не поддерживается материнской платой");
+        
+        int totalPower = GetTotalPower();
+        if (blokPitaniya?.MoshchnostVt < totalPower)
+            issues.Add($"Блок питания недостаточной мощности (нужно минимум {totalPower} Вт)");
+        
+        return issues.Count == 0 
+            ? "✅ Все компоненты совместимы!" 
+            : $"⚠️ Проблемы: {string.Join(", ", issues)}";
+    }
+    
+    /// <summary>
+    /// Рассчитывает общую стоимость выбранных компонентов.
+    /// </summary>
+    /// <returns>Суммарная стоимость в рублях (десятичное число).</returns>
+    /// <remarks>
+    /// Суммирует цену каждого выбранного компонента, если он не равен null.
+    /// Возвращает 0, если ни один компонент не выбран.
+    /// </remarks>
+    private decimal GetTotalPrice()
+    {
+        decimal total = 0;
+        
+        if (GetSelectedMaterinskayaPlata() != null) total += GetSelectedMaterinskayaPlata()!.Tsena;
+        if (GetSelectedProtsessor() != null) total += GetSelectedProtsessor()!.Tsena;
+        if (GetSelectedOperativnayaPamyat() != null) total += GetSelectedOperativnayaPamyat()!.Tsena;
+        if (GetSelectedVideokarta() != null) total += GetSelectedVideokarta()!.Tsena;
+        if (GetSelectedNakopitel() != null) total += GetSelectedNakopitel()!.Tsena;
+        if (GetSelectedBlokPitaniya() != null) total += GetSelectedBlokPitaniya()!.Tsena;
+        if (GetSelectedKorpus() != null) total += GetSelectedKorpus()!.Tsena;
+        
+        return total;
+    }
+    
+    /// <summary>
+    /// Рассчитывает общую потребляемую мощность выбранных компонентов.
+    /// </summary>
+    /// <returns>Суммарная мощность в ваттах (целое число).</returns>
+    /// <remarks>
+    /// Суммирует мощность процессора и видеокарты, добавляет 100 Вт для остальных компонентов.
+    /// Используется для проверки достаточности мощности блока питания.
+    /// </remarks>
+    private int GetTotalPower()
+    {
+        int total = 0;
+        
+        if (GetSelectedProtsessor() != null) total += GetSelectedProtsessor()!.Moshchnost;
+        if (GetSelectedVideokarta() != null) total += GetSelectedVideokarta()!.Moshchnost;
+        // Добавьте +100 Вт для остальных компонентов
+        total += 100;
+        
+        return total;
+    }
+    
+    /// <summary>
+    /// Определяет уровень производительности сборки на основе её стоимости.
+    /// </summary>
+    /// <returns>Текстовая характеристика уровня производительности.</returns>
+    /// <remarks>
+    /// Классифицирует сборки по четырем категориям:
+    /// - Бюджетная: до 50 000 ₽
+    /// - Средняя: 50 000 - 100 000 ₽
+    /// - Игровая: 100 000 - 200 000 ₽
+    /// - Профессиональная: свыше 200 000 ₽
+    /// </remarks>
+    private string GetPerformanceLevel()
+    {
+        if (!IsConfigurationComplete()) return "—";
+        
+        decimal totalPrice = GetTotalPrice();
+        
+        if (totalPrice < 50000) return "Бюджетная";
+        if (totalPrice < 100000) return "Средняя";
+        if (totalPrice < 200000) return "Игровая";
+        return "Профессиональная";
+    }
+    
+    /// <summary>
+    /// Сохраняет текущую конфигурацию как готовую сборку в базе данных.
+    /// </summary>
+    /// <returns>Асинхронная задача, выполняющая сохранение.</returns>
+    /// <remarks>
+    /// Перед сохранением проверяет полноту и совместимость конфигурации.
+    /// Создает уникальный ID сборки на основе текущей даты и времени.
+    /// После успешного сохранения перенаправляет пользователя на страницу готовых сборок.
+    /// </remarks>
+    private async Task SaveConfiguration()
+    {
+        if (!IsConfigurationComplete() || !IsConfigurationCompatible())
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Сначала выберите все компоненты и убедитесь в их совместимости!");
+            return;
+        }
+        
+        try
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            
+            var sborka = new GotovayaSborka
+            {
+                IdSborki = $"CUSTOM-{DateTime.Now:yyyyMMdd-HHmmss}",
+                MaterinskayaPlataModel = selectedMaterinskayaPlata,
+                ProtsessorModel = selectedProtsessor,
+                OperativnayaPamyatModel = selectedOperativnayaPamyat,
+                VideokartaModel = selectedVideokarta,
+                NakopitelModel = selectedNakopitel,
+                BlokPitaniyaModel = selectedBlokPitaniya,
+                KorpusModel = selectedKorpus,
+                VychislitelnayaMoshchnost = GetPerformanceLevel(),
+                ObshchayaStoimost = GetTotalPrice(),
+                MoshnostVt = GetTotalPower()
+            };
+            
+            context.GotovyyeSborki.Add(sborka);
+            await context.SaveChangesAsync();
+            
+            await JSRuntime.InvokeVoidAsync("alert", 
+                $"✅ Сборка сохранена!\nID: {sborka.IdSborki}\nСтоимость: {sborka.ObshchayaStoimost:N2} ₽\nМощность: {sborka.MoshnostVt} Вт");
+            
+            // Перенаправляем на страницу сборок
+            await JSRuntime.InvokeVoidAsync("window.location.href", "/gotovyye-sborki");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"❌ Ошибка сохранения: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Сбрасывает все выбранные компоненты, очищая текущую конфигурацию.
+    /// </summary>
+    /// <remarks>
+    /// Устанавливает все свойства выбранных компонентов в пустые строки.
+    /// Вызывает <see cref="ComponentBase.StateHasChanged"/> для обновления UI.
+    /// </remarks>
+    private void ResetConfiguration()
+    {
+        selectedMaterinskayaPlata = "";
+        selectedProtsessor = "";
+        selectedOperativnayaPamyat = "";
+        selectedVideokarta = "";
+        selectedNakopitel = "";
+        selectedBlokPitaniya = "";
+        selectedKorpus = "";
+        
+        StateHasChanged();
+    }
+}
